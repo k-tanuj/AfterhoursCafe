@@ -8,7 +8,15 @@ function record(error: unknown) {
   lastCapturedError = { error, at: Date.now() };
 }
 
-if (typeof globalThis.addEventListener === "function") {
+if (typeof process !== "undefined" && typeof console !== "undefined") {
+  const originalConsoleError = console.error;
+  console.error = function (...args: any[]) {
+    if (args[0] instanceof Error || (args[0] && typeof args[0] === 'object' && args[0].message)) {
+      record(args[0]);
+    }
+    originalConsoleError.apply(console, args);
+  };
+} else if (typeof globalThis.addEventListener === "function") {
   globalThis.addEventListener("error", (event) => record((event as ErrorEvent).error ?? event));
   globalThis.addEventListener("unhandledrejection", (event) =>
     record((event as PromiseRejectionEvent).reason),
