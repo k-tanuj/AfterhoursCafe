@@ -95,7 +95,7 @@ IMPORTANT: You now have tools!
             description: "Add a specific menu item to the user's cart.",
             parameters: z.object({
               itemId: z.string().describe("The exact ID of the menu item from the live menu list."),
-              quantity: z.number().int().min(1).max(10).describe("The number of items to add."),
+              quantity: z.number().describe("The number of items to add."),
               itemName: z.string().describe("The name of the item to confirm to the user."),
             }),
             execute: async ({ itemId, quantity, itemName }) => {
@@ -106,7 +106,7 @@ IMPORTANT: You now have tools!
           showMenu: tool({
             description: "Display an interactive, visual menu to the user.",
             parameters: z.object({
-              category: z.string().optional().describe("Optional category filter like 'Sweet', 'Strong', or 'Cold'"),
+              category: z.string().describe("The category to filter by (e.g. 'Sweet', 'Strong', or 'All')"),
             }),
             execute: async ({ category }) => {
               // Frontend intercepts this to render the rich UI menu
@@ -116,13 +116,24 @@ IMPORTANT: You now have tools!
         }
       });
 
-      // Save assistant reply to DB
-      if (response.text) {
-        await db.execute(
-          "INSERT INTO chat_history (id, user_id, role, content) VALUES (UUID(), ?, 'assistant', ?)",
-          [userId, response.text]
-        );
+      let finalReply = response.text;
+
+      if (!finalReply && response.toolCalls && response.toolCalls.length > 0) {
+        const tc = response.toolCalls[0];
+        if (tc.toolName === 'addToCart') {
+          finalReply = `Got it. Added ${tc.args.itemName} to your cart.`;
+        } else if (tc.toolName === 'showMenu') {
+          finalReply = `Here's the menu! Let me know if anything catches your eye.`;
+        }
       }
+
+      finalReply = finalReply || "got it."; // ultimate fallback just in case
+
+      // Save assistant reply to DB
+      await db.execute(
+        "INSERT INTO chat_history (id, user_id, role, content) VALUES (UUID(), ?, 'assistant', ?)",
+        [userId, finalReply]
+      );
 
       // If tools were called, also save a system message so history doesn't break
       if (response.toolCalls && response.toolCalls.length > 0) {
@@ -132,8 +143,11 @@ IMPORTANT: You now have tools!
         );
       }
 
+      console.log("BUDDY RESPONSE TEXT:", JSON.stringify(finalReply));
+      console.log("BUDDY RESPONSE TOOL CALLS:", JSON.stringify(response.toolCalls));
+
       return { 
-        reply: response.text || "done.", 
+        reply: finalReply, 
         toolCalls: response.toolCalls 
       };
     } catch (e: unknown) {
