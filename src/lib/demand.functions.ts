@@ -108,7 +108,7 @@ export const retrainDemand = createServerFn({ method: "POST" })
     };
   });
 
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 async function verifyAdminCredentials(email: string, password: string): Promise<boolean> {
   const [rows]: any = await db.execute('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()]);

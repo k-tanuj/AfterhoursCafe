@@ -8,7 +8,7 @@
  */
 
 import { db } from "./db";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 
 async function ensureCustomerExists(email: string, name: string) {
