@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, tool } from "ai";
 import { z } from "zod";
-import { createGroq } from "@ai-sdk/groq";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { db } from "./db";
 import { requireAuth } from "./auth.middleware";
 
@@ -28,8 +28,8 @@ export const chatWithBuddy = createServerFn({ method: "POST" })
   .middleware([requireAuth])
   .validator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ reply: string; toolCalls?: any[] }> => {
-    const key = process.env.GROQ_API_KEY;
-    if (!key) throw new Error("Missing GROQ_API_KEY");
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("Missing GEMINI_API_KEY in environment variables.");
 
     const userId = context.user.id;
 
@@ -86,11 +86,11 @@ IMPORTANT: You now have tools!
 - If you recommend specific items (e.g., "You should try the Nutella Dream Waffle"), use the \`displayMenu\` tool with those specific item IDs so the user can see them and add them to their cart.
 - DO NOT use any HTML tags or markdown to call tools. Simply invoke the tool natively.`;
 
-    const groq = createGroq({ apiKey: key });
+    const google = createGoogleGenerativeAI({ apiKey: key });
 
     try {
       const response = await generateText({
-        model: groq("llama-3.1-8b-instant"),
+        model: google("gemini-1.5-flash"),
         system,
         messages,
         tools: {
