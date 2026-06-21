@@ -16,4 +16,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  ssr: {
+    noExternal: ["gsap"],
+  },
 });
