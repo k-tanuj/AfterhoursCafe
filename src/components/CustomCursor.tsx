@@ -98,12 +98,12 @@ export function CustomCursor() {
     <>
       <div
         ref={followerRef}
-        className="pointer-events-none fixed left-0 top-0 z-[9998] h-10 w-10 rounded-full border border-foreground opacity-0"
+        className="pointer-events-none fixed left-0 top-0 z-[99998] h-10 w-10 rounded-full border border-foreground opacity-0"
         style={{ mixBlendMode: "difference" }}
       />
       <div
         ref={cursorRef}
-        className="pointer-events-none fixed left-0 top-0 z-[9999] h-2 w-2 rounded-full bg-foreground opacity-0"
+        className="pointer-events-none fixed left-0 top-0 z-[99999] h-2 w-2 rounded-full bg-foreground opacity-0"
         style={{ mixBlendMode: "difference" }}
       />
     </>
