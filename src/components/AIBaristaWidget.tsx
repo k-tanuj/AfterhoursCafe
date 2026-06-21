@@ -21,6 +21,44 @@ const QUICK_REPLIES = [
   "Show my cart 🛒",
 ];
 
+function BuddyMenuCard({ item, addToCart }: { item: any; addToCart: any }) {
+  const [added, setAdded] = useState(false);
+
+  const handleAdd = () => {
+    // The store expects menu_item_id, name, and price
+    addToCart({ 
+      menu_item_id: item.id, 
+      name: item.name, 
+      price: Number(item.price) 
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+    
+    // Notify the rest of the app to open the cart sidebar or show toast
+    window.dispatchEvent(new CustomEvent('cart:add', { detail: { id: item.id, name: item.name, quantity: 1 }}));
+  };
+
+  return (
+    <div className="flex-shrink-0 w-48 bg-white border border-ink/10 rounded-xl p-3 shadow-sm snap-start flex flex-col gap-2">
+      <div>
+        <h4 className="font-display text-sm leading-tight">{item.name}</h4>
+        <p className="text-[10px] opacity-60 line-clamp-2 mt-0.5 leading-snug">{item.description}</p>
+      </div>
+      <div className="flex items-center justify-between mt-auto pt-2 border-t border-ink/5">
+        <span className="font-mono text-xs opacity-80">₹{item.price}</span>
+        <button
+          onClick={handleAdd}
+          className={`px-2.5 py-1 rounded text-[10px] uppercase font-mono transition-all shadow-sm ${
+            added ? "bg-green-600 text-white" : "bg-accent text-white hover:scale-105"
+          }`}
+        >
+          {added ? "✓ Added" : "+ Add"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function AIBaristaWidget() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -144,21 +182,7 @@ export function AIBaristaWidget() {
                       return (
                         <div key={tcIdx} className="w-[calc(100%+1.25rem)] -ml-5 pl-5 pr-5 mt-3 overflow-x-auto scrollbar-none snap-x flex gap-3 pb-2">
                           {tc.args.items.map((item: any) => (
-                            <div key={item.id} className="flex-shrink-0 w-48 bg-white border border-ink/10 rounded-xl p-3 shadow-sm snap-start flex flex-col gap-2">
-                              <div>
-                                <h4 className="font-display text-sm leading-tight">{item.name}</h4>
-                                <p className="text-[10px] opacity-60 line-clamp-2 mt-0.5 leading-snug">{item.description}</p>
-                              </div>
-                              <div className="flex items-center justify-between mt-auto pt-2 border-t border-ink/5">
-                                <span className="font-mono text-xs opacity-80">₹{item.price}</span>
-                                <button
-                                  onClick={() => addToCart({ ...item, quantity: 1 })}
-                                  className="px-2.5 py-1 bg-accent text-white rounded text-[10px] uppercase font-mono hover:scale-105 transition-transform shadow-sm"
-                                >
-                                  + Add
-                                </button>
-                              </div>
-                            </div>
+                            <BuddyMenuCard key={item.id} item={item} addToCart={addToCart} />
                           ))}
                         </div>
                       );
