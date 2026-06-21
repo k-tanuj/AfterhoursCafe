@@ -94,7 +94,8 @@ function AuthPage() {
         navigate({ to: loginRes.role === "ADMIN" ? "/admin" : "/profile" });
       }
     } catch (err: any) {
-      setAuthError("Something went wrong with the server.");
+      console.error("Auth error details:", err);
+      setAuthError("Server error: " + (err.message || String(err)));
     } finally {
       setBusy(false);
     }
