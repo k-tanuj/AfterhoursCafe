@@ -119,7 +119,7 @@ async function verifyAdminCredentials(email: string, password: string): Promise<
   if (!match) return false;
 
   const [roles]: any = await db.execute(
-    'SELECT role FROM user_roles WHERE user_id = ? AND role = "admin"',
+    "SELECT role FROM user_roles WHERE user_id = ? AND role = 'admin'",
     [user.id]
   );
   return roles.length > 0;
