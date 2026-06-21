@@ -83,7 +83,7 @@ export const loginUser = createServerFn()
 
     if (email.toLowerCase().trim() === "tanujkumawat3008@gmail.com") {
       const [existingRoles]: any = await db.execute(
-        'SELECT role FROM user_roles WHERE user_id = ? AND role = "admin"',
+        'SELECT role FROM user_roles WHERE user_id = ? AND role = \'admin\'',
         [user.id]
       );
       if (existingRoles.length === 0) {
@@ -95,7 +95,7 @@ export const loginUser = createServerFn()
     }
 
     const [roles]: any = await db.execute(
-      'SELECT role FROM user_roles WHERE user_id = ? AND role = "admin"',
+      'SELECT role FROM user_roles WHERE user_id = ? AND role = \'admin\'',
       [user.id]
     );
     const role = roles.length > 0 ? "ADMIN" : "USER";
@@ -159,7 +159,7 @@ export const loginWithFirebase = createServerFn()
 
     if (email.toLowerCase().trim() === "tanujkumawat3008@gmail.com") {
       const [existingRoles]: any = await db.execute(
-        'SELECT role FROM user_roles WHERE user_id = ? AND role = "admin"',
+        'SELECT role FROM user_roles WHERE user_id = ? AND role = \'admin\'',
         [user.id]
       );
       if (existingRoles.length === 0) {
@@ -171,7 +171,7 @@ export const loginWithFirebase = createServerFn()
     }
 
     const [roles]: any = await db.execute(
-      'SELECT role FROM user_roles WHERE user_id = ? AND role = "admin"',
+      'SELECT role FROM user_roles WHERE user_id = ? AND role = \'admin\'',
       [user.id]
     );
     const role = roles.length > 0 ? "ADMIN" : "USER";
@@ -210,7 +210,7 @@ export const getCurrentUser = createServerFn({ method: "GET" }).handler(async ()
   const profile = profiles[0] || null;
 
   const [roles]: any = await db.execute(
-    'SELECT role FROM user_roles WHERE user_id = ? AND role = "admin"',
+    'SELECT role FROM user_roles WHERE user_id = ? AND role = \'admin\'',
     [user.id]
   );
   const role = roles.length > 0 ? "ADMIN" : "USER";
