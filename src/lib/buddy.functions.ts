@@ -80,8 +80,9 @@ When recommending items, pick 2-3 from this live menu based on their mood/time:
 ${menuLine}
 
 IMPORTANT: You now have tools! 
-- If the user asks you to add something to their cart or order something, use the \`addToCart\` tool.
-- If they ask to see the menu, use the \`showMenu\` tool to render a beautiful UI instead of listing items as text.`;
+- If the user asks to see the menu, or asks to see a specific category of items (e.g., "show me toasts"), use the \`displayMenu\` tool.
+- If you recommend specific items (e.g., "You should try the Nutella Dream Waffle"), use the \`displayMenu\` tool with those specific item IDs so the user can see them and add them to their cart.
+- DO NOT use any HTML tags or markdown to call tools. Simply invoke the tool natively.`;
 
     const groq = createGroq({ apiKey: key });
 
@@ -91,39 +92,42 @@ IMPORTANT: You now have tools!
         system,
         messages,
         tools: {
-          addToCart: tool({
-            description: "Add a specific menu item to the user's cart.",
+          displayMenu: tool({
+            description: "Display an interactive, visual menu to the user. Use this when the user asks to see the menu, a category, or when you are recommending specific items.",
             parameters: z.object({
-              itemId: z.string().describe("The exact ID of the menu item from the live menu list."),
-              quantity: z.number().describe("The number of items to add."),
-              itemName: z.string().describe("The name of the item to confirm to the user."),
+              category: z.string().optional().describe("The category to filter by (e.g. 'Toast', 'Signature', 'Snacks'). Leave empty to show all items."),
+              itemIds: z.array(z.string()).optional().describe("Specific item IDs to display. Use this when recommending specific items from the menu."),
             }),
-            execute: async ({ itemId, quantity, itemName }) => {
-              // The actual cart addition happens on the frontend using tool results.
-              return { success: true, message: `Added ${quantity}x ${itemName} to cart.` };
-            },
-          }),
-          showMenu: tool({
-            description: "Display an interactive, visual menu to the user.",
-            parameters: z.object({
-              category: z.string().describe("The category to filter by (e.g. 'Sweet', 'Strong', or 'All')"),
-            }),
-            execute: async ({ category }) => {
-              // Frontend intercepts this to render the rich UI menu
-              return { success: true, category };
+            execute: async ({ category, itemIds }) => {
+              // The frontend intercepts this to render the rich UI menu
+              return { success: true, category, itemIds };
             },
           })
         }
       });
 
-      let finalReply = response.text;
+      let rawText = response.text || "";
+      let manualToolCalls = response.toolCalls ? [...response.toolCalls] : [];
 
-      if (!finalReply && response.toolCalls && response.toolCalls.length > 0) {
-        const tc = response.toolCalls[0];
-        if (tc.toolName === 'addToCart') {
-          finalReply = `Got it. Added ${tc.args.itemName} to your cart.`;
-        } else if (tc.toolName === 'showMenu') {
-          finalReply = `Here's the menu! Let me know if anything catches your eye.`;
+      // Fix Groq LLaMA model leaking tool calls as raw text
+      const functionRegex = /<function=(\w+)>(.*?)<\/function>/g;
+      let finalReply = rawText.replace(functionRegex, (match, toolName, argsStr) => {
+        if (toolName === "displayMenu") {
+          let args = {};
+          try { if (argsStr) args = JSON.parse(argsStr); } catch (e) {}
+          manualToolCalls.push({
+            toolCallId: "manual-" + Math.random().toString(36).substring(7),
+            toolName: "displayMenu",
+            args
+          });
+        }
+        return ""; // remove the tag from the text
+      }).trim();
+
+      if (!finalReply && manualToolCalls.length > 0) {
+        const tc = manualToolCalls[0];
+        if (tc.toolName === 'displayMenu') {
+          finalReply = `Here are some options for you! Let me know what you'd like.`;
         }
       }
 
@@ -136,19 +140,46 @@ IMPORTANT: You now have tools!
       );
 
       // If tools were called, also save a system message so history doesn't break
-      if (response.toolCalls && response.toolCalls.length > 0) {
+      if (manualToolCalls.length > 0) {
          await db.execute(
           "INSERT INTO chat_history (id, user_id, role, content) VALUES (UUID(), ?, 'system', ?)",
-          [userId, `[Action taken: ${response.toolCalls.map(t => t.toolName).join(', ')}]`]
+          [userId, `[Action taken: ${manualToolCalls.map(t => t.toolName).join(', ')}]`]
         );
       }
 
+      // Enrich displayMenu tool calls with actual menu item data
+      const enrichedToolCalls = manualToolCalls.map((tc: any) => {
+        if (tc.toolName === 'displayMenu') {
+          const { category, itemIds } = tc.args;
+          let filteredItems = menu;
+          if (itemIds && itemIds.length > 0) {
+            filteredItems = menu.filter((m: any) => itemIds.includes(m.id));
+          } else if (category) {
+            filteredItems = menu.filter((m: any) => m.category.toLowerCase().includes(category.toLowerCase()));
+          }
+          
+          // If no specific items requested and no category, just show a few random items
+          if (!itemIds && !category) {
+            filteredItems = menu.slice(0, 5); 
+          }
+
+          return {
+            ...tc,
+            args: {
+              ...tc.args,
+              items: filteredItems // Attach the full item objects so frontend can render them
+            }
+          };
+        }
+        return tc;
+      });
+
       console.log("BUDDY RESPONSE TEXT:", JSON.stringify(finalReply));
-      console.log("BUDDY RESPONSE TOOL CALLS:", JSON.stringify(response.toolCalls));
+      console.log("BUDDY RESPONSE TOOL CALLS:", JSON.stringify(enrichedToolCalls));
 
       return { 
         reply: finalReply, 
-        toolCalls: response.toolCalls 
+        toolCalls: enrichedToolCalls 
       };
     } catch (e: unknown) {
       console.error("Buddy Chat Error:", e);

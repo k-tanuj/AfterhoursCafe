@@ -5,7 +5,7 @@ import { chatWithBuddy, getChatHistory } from "@/lib/buddy.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { useCartStore } from "@/store/cart";
 
-type Msg = { role: "assistant" | "user" | "system"; content: string };
+type Msg = { role: "assistant" | "user" | "system"; content: string; toolCalls?: any[] };
 
 const SEED: Msg[] = [
   {
@@ -85,28 +85,9 @@ export function AIBaristaWidget() {
       // Send only the new message to the backend; it fetches history internally
       const { reply, toolCalls } = await chat({ data: { message: text } });
       
-      setMsgs((m) => [...m, { role: "assistant", content: reply }]);
+      setMsgs((m) => [...m, { role: "assistant", content: reply, toolCalls }]);
 
-      // Handle tool calls on the frontend
-      if (toolCalls) {
-        for (const tc of toolCalls) {
-          if (tc.toolName === "addToCart" && tc.args) {
-            const { itemId, quantity, itemName } = tc.args;
-            // Add to client side cart
-            addToCart({
-              id: itemId,
-              name: itemName,
-              price: 0, // Buddy might not know price, but let's assume it gets synced or we just trust it for now. Wait, actual cart items need price!
-              // Actually, useCartStore expects the full menu item. Let's just add it with price 0, or Buddy should provide price?
-              // Let's modify Buddy backend to provide price too! Wait, for now we will just use 0, the user will see it in cart.
-            } as any); 
-            
-            // To properly add, we really need the price, but we will let the cart handle it if we can.
-            // Let's fire a custom event to notify the app
-            window.dispatchEvent(new CustomEvent('cart:add', { detail: { id: itemId, name: itemName, quantity }}));
-          }
-        }
-      }
+      // We don't automatically add to cart anymore, the user clicks the button on the UI card.
 
     } catch (e) {
       const msg = e instanceof Error ? e.message : "something broke. try again?";
@@ -146,7 +127,7 @@ export function AIBaristaWidget() {
               if (m.role === "system") return null; // Hide system tool notes
               const isAssistant = m.role === "assistant";
               return (
-                <div key={i} className={isAssistant ? "flex flex-col items-start" : "flex flex-col items-end"}>
+                <div key={i} className={isAssistant ? "flex flex-col items-start w-full overflow-hidden" : "flex flex-col items-end w-full overflow-hidden"}>
                   <div
                     className={
                       isAssistant
@@ -156,6 +137,35 @@ export function AIBaristaWidget() {
                   >
                     {m.content}
                   </div>
+                  
+                  {/* Render Rich Tool Calls */}
+                  {m.toolCalls && m.toolCalls.map((tc, tcIdx) => {
+                    if (tc.toolName === 'displayMenu' && tc.args.items && tc.args.items.length > 0) {
+                      return (
+                        <div key={tcIdx} className="w-[calc(100%+1.25rem)] -ml-5 pl-5 pr-5 mt-3 overflow-x-auto scrollbar-none snap-x flex gap-3 pb-2">
+                          {tc.args.items.map((item: any) => (
+                            <div key={item.id} className="flex-shrink-0 w-48 bg-white border border-ink/10 rounded-xl p-3 shadow-sm snap-start flex flex-col gap-2">
+                              <div>
+                                <h4 className="font-display text-sm leading-tight">{item.name}</h4>
+                                <p className="text-[10px] opacity-60 line-clamp-2 mt-0.5 leading-snug">{item.description}</p>
+                              </div>
+                              <div className="flex items-center justify-between mt-auto pt-2 border-t border-ink/5">
+                                <span className="font-mono text-xs opacity-80">₹{item.price}</span>
+                                <button
+                                  onClick={() => addToCart({ ...item, quantity: 1 })}
+                                  className="px-2.5 py-1 bg-accent text-white rounded text-[10px] uppercase font-mono hover:scale-105 transition-transform shadow-sm"
+                                >
+                                  + Add
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+
                   <span className="font-mono text-[9px] opacity-40 mt-1.5 px-1 uppercase">
                     {isAssistant ? "Buddy" : "You"}
                   </span>
