@@ -46,7 +46,7 @@ export const chatWithBuddy = createServerFn({ method: "POST" })
     );
 
     const messages = (historyRows ?? []).map((r: any) => ({
-      role: r.role,
+      role: r.role === 'system' ? 'assistant' : r.role,
       content: r.content,
     }));
 
@@ -87,7 +87,7 @@ IMPORTANT: You now have tools!
 
     try {
       const response = await generateText({
-        model: groq("llama-3.1-8b-instant"),
+        model: groq("llama-3.3-70b-versatile"),
         system,
         messages,
         tools: {
