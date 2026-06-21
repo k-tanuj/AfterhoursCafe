@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MenuRouteImport } from './routes/menu'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ChillPillRouteImport } from './routes/chill-pill'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as BookingRouteImport } from './routes/booking'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -27,6 +28,7 @@ import { Route as AdminFeedbackRouteImport } from './routes/admin.feedback'
 import { Route as AdminDemandRouteImport } from './routes/admin.demand'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 
@@ -43,6 +45,11 @@ const ContactRoute = ContactRouteImport.update({
 const ChillPillRoute = ChillPillRouteImport.update({
   id: '/chill-pill',
   path: '/chill-pill',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookingRoute = BookingRouteImport.update({
@@ -119,6 +126,11 @@ const AdminBookingsRoute = AdminBookingsRouteImport.update({
   path: '/bookings',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -136,11 +148,13 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/booking': typeof BookingRoute
+  '/checkout': typeof CheckoutRoute
   '/chill-pill': typeof ChillPillRoute
   '/contact': typeof ContactRoute
   '/menu': typeof MenuRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/demand': typeof AdminDemandRoute
@@ -156,11 +170,13 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/booking': typeof BookingRoute
+  '/checkout': typeof CheckoutRoute
   '/chill-pill': typeof ChillPillRoute
   '/contact': typeof ContactRoute
   '/menu': typeof MenuRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/demand': typeof AdminDemandRoute
@@ -179,11 +195,13 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/booking': typeof BookingRoute
+  '/checkout': typeof CheckoutRoute
   '/chill-pill': typeof ChillPillRoute
   '/contact': typeof ContactRoute
   '/menu': typeof MenuRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/demand': typeof AdminDemandRoute
@@ -202,11 +220,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/booking'
+    | '/checkout'
     | '/chill-pill'
     | '/contact'
     | '/menu'
     | '/history'
     | '/profile'
+    | '/admin/analytics'
     | '/admin/bookings'
     | '/admin/customers'
     | '/admin/demand'
@@ -222,11 +242,13 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/booking'
+    | '/checkout'
     | '/chill-pill'
     | '/contact'
     | '/menu'
     | '/history'
     | '/profile'
+    | '/admin/analytics'
     | '/admin/bookings'
     | '/admin/customers'
     | '/admin/demand'
@@ -244,11 +266,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/booking'
+    | '/checkout'
     | '/chill-pill'
     | '/contact'
     | '/menu'
     | '/_authenticated/history'
     | '/_authenticated/profile'
+    | '/admin/analytics'
     | '/admin/bookings'
     | '/admin/customers'
     | '/admin/demand'
@@ -267,6 +291,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   BookingRoute: typeof BookingRoute
+  CheckoutRoute: typeof CheckoutRoute
   ChillPillRoute: typeof ChillPillRoute
   ContactRoute: typeof ContactRoute
   MenuRoute: typeof MenuRoute
@@ -293,6 +318,13 @@ declare module '@tanstack/react-router' {
       path: '/chill-pill'
       fullPath: '/chill-pill'
       preLoaderRoute: typeof ChillPillRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/booking': {
@@ -400,6 +432,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBookingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -431,6 +470,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AdminRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminBookingsRoute: typeof AdminBookingsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminDemandRoute: typeof AdminDemandRoute
@@ -443,6 +483,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminBookingsRoute: AdminBookingsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminDemandRoute: AdminDemandRoute,
@@ -463,6 +504,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   BookingRoute: BookingRoute,
+  CheckoutRoute: CheckoutRoute,
   ChillPillRoute: ChillPillRoute,
   ContactRoute: ContactRoute,
   MenuRoute: MenuRoute,

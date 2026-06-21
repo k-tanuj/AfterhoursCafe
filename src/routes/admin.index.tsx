@@ -21,11 +21,12 @@ export const Route = createFileRoute("/admin/")({
 });
 
 const CARDS: {
-  to: "/admin/orders" | "/admin/customers" | "/admin/bookings" | "/admin/tables" | "/admin/menu" | "/admin/demand" | "/admin/feedback" | "/admin/wall";
+  to: "/admin/orders" | "/admin/customers" | "/admin/bookings" | "/admin/tables" | "/admin/menu" | "/admin/demand" | "/admin/feedback" | "/admin/wall" | "/admin/analytics";
   label: string;
   desc: string;
 }[] = [
   { to: "/admin/orders", label: "Orders", desc: "log walk-ins, award loyalty stamps." },
+  { to: "/admin/analytics", label: "Analytics", desc: "total sales, profit, and monthly stats." },
   { to: "/admin/customers", label: "Customers", desc: "everyone who showed up." },
   { to: "/admin/bookings", label: "Bookings", desc: "tables booked — today and ahead." },
   { to: "/admin/tables", label: "Table Inventory", desc: "add tables, set capacities, toggle on/off." },

@@ -10,6 +10,8 @@ import espresso from "@/assets/drink-espresso.jpg";
 import coldbrew from "@/assets/drink-coldbrew.jpg";
 import matcha from "@/assets/drink-matcha.jpg";
 import { getPublicMenu, type PublicMenuItem } from "@/lib/menu.functions";
+import { useCartStore } from "@/store/cart";
+import { CartDrawer } from "@/components/CartDrawer";
 
 import wafflesVideo from "@/assets/menu videos/Waffles.mp4";
 import coldCoffeeVideo from "@/assets/menu videos/cold coffee.mp4";
@@ -197,6 +199,21 @@ function MenuPage() {
                           <p className="text-center text-sm italic mt-1 text-ink/70">{d.description}</p>
                           <div className="absolute bottom-3 left-4 font-mono text-[10px] opacity-60">{d.category.toLowerCase()}</div>
                           <div className="absolute bottom-3 right-4 font-display text-xl text-accent">₹{d.price}</div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              useCartStore.getState().addItem({
+                                menu_item_id: d.id,
+                                name: d.name,
+                                price: Number(d.price)
+                              });
+                            }}
+                            className="absolute -bottom-4 right-4 bg-ink text-paper rounded-full p-3 shadow-lg hover:scale-110 active:scale-95 transition-transform"
+                            aria-label="Add to cart"
+                          >
+                            <Svg name="plus" className="size-5" />
+                          </button>
                         </div>
                       );
                     });
@@ -270,6 +287,31 @@ function MenuPage() {
         )}
 
       </section>
+
+      {/* Floating Cart Button */}
+      <CartButton />
+
+      {/* Cart Drawer */}
+      <CartDrawer />
     </SiteShell>
+  );
+}
+
+function CartButton() {
+  const { items, setIsOpen } = useCartStore();
+  const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
+
+  if (totalItems === 0) return null;
+
+  return (
+    <button
+      onClick={() => setIsOpen(true)}
+      className="fixed bottom-6 right-6 md:bottom-12 md:right-12 bg-ink text-paper px-6 py-4 rounded-full shadow-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-transform z-40"
+    >
+      <Svg name="bag" className="size-5" />
+      <span className="font-mono text-sm uppercase tracking-widest">
+        Cart ({totalItems})
+      </span>
+    </button>
   );
 }

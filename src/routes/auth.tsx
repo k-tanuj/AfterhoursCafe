@@ -171,7 +171,8 @@ function AuthPage() {
             toast.success("Pulled up a chair with Google.");
             navigate({ to: loginRes.role === "ADMIN" ? "/admin" : "/profile" });
           } catch (error: any) {
-            setAuthError("Google sign-in failed.");
+            console.error(error);
+            setAuthError("Google sign-in failed: " + (error.message || String(error)));
           } finally {
             setBusy(false);
           }

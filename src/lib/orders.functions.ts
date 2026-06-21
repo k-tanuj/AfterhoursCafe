@@ -191,3 +191,77 @@ export const logOfflineOrder = createServerFn({ method: "POST" })
       newStamps,
     };
   });
+
+export const submitCustomerOrder = createServerFn({ method: "POST" })
+  .validator((data: { 
+    name: string; 
+    email: string; 
+    amount: number; 
+    date: string;
+    items?: OrderItem[] | null;
+  }) => data)
+  .handler(async ({ data }) => {
+    const { name, email, amount, date, items } = data;
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+    const itemsJson = items ? JSON.stringify(items) : null;
+    
+    // 1. Get or create customer by email
+    const [customers]: any = await db.execute("SELECT * FROM customers WHERE email = ?", [cleanEmail]);
+    let customer: CustomerRow;
+    
+    if (customers.length > 0) {
+      customer = customers[0];
+    } else {
+      const customerId = randomUUID();
+      await db.execute(
+        "INSERT INTO customers (id, email, name, stamps, last_stamp_date) VALUES (?, ?, ?, 0, null)",
+        [customerId, cleanEmail, cleanName]
+      );
+      customer = {
+        id: customerId,
+        email: cleanEmail,
+        name: cleanName,
+        stamps: 0,
+        last_stamp_date: null,
+      };
+    }
+
+    const lastStampStr = customer.last_stamp_date ? formatDateString(customer.last_stamp_date) : null;
+    const eligible = amount >= 200 && lastStampStr !== date;
+    const orderId = randomUUID();
+
+    // 2. Insert order (logged_by is 'online' or null)
+    await db.execute(
+      `INSERT INTO orders (id, customer_id, customer_name, email, amount, order_date, stamp_awarded, logged_by, items_json) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        orderId,
+        customer.id,
+        cleanName,
+        cleanEmail,
+        amount,
+        date,
+        eligible ? 1 : 0,
+        'online',
+        itemsJson,
+      ]
+    );
+
+    // 3. Update customer stamps if eligible
+    let newStamps = customer.stamps;
+    if (eligible) {
+      newStamps = Math.min(10, (customer.stamps ?? 0) + 1);
+      await db.execute(
+        "UPDATE customers SET stamps = ?, last_stamp_date = ?, name = ? WHERE id = ?",
+        [newStamps, date, cleanName, customer.id]
+      );
+    }
+
+    return {
+      success: true,
+      eligible,
+      newStamps,
+    };
+  });
+
