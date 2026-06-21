@@ -150,7 +150,8 @@ IMPORTANT: You now have tools!
       // Enrich displayMenu tool calls with actual menu item data
       const enrichedToolCalls = manualToolCalls.map((tc: any) => {
         if (tc.toolName === 'displayMenu') {
-          const { category, itemIds } = tc.args;
+          const args = tc.args || {};
+          const { category, itemIds } = args;
           let filteredItems = menu;
           if (itemIds && itemIds.length > 0) {
             filteredItems = menu.filter((m: any) => itemIds.includes(m.id));
