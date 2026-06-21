@@ -45,8 +45,10 @@ export const chatWithBuddy = createServerFn({ method: "POST" })
       [userId]
     );
 
-    const messages = (historyRows ?? []).map((r: any) => ({
-      role: r.role === 'system' ? 'assistant' : r.role,
+    const messages = (historyRows ?? [])
+      .filter((r: any) => r.role !== 'system')
+      .map((r: any) => ({
+      role: r.role,
       content: r.content,
     }));
 
@@ -122,6 +124,17 @@ IMPORTANT: You now have tools!
           });
         }
         return ""; // remove the tag from the text
+      });
+
+      // Also catch hallucinated brackets like [displayMenu] or [Action taken: displayMenu]
+      const bracketRegex = /\[(?:Action taken:\s*)?(displayMenu|showMenu)\]/gi;
+      finalReply = finalReply.replace(bracketRegex, (match, toolName) => {
+        manualToolCalls.push({
+          toolCallId: "manual-" + Math.random().toString(36).substring(7),
+          toolName: "displayMenu",
+          args: {}
+        });
+        return "";
       }).trim();
 
       if (!finalReply && manualToolCalls.length > 0) {
