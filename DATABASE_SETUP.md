@@ -255,9 +255,22 @@ CREATE TABLE demand_forecasts (
 ) ENGINE=InnoDB;
 ```
 
+## 11. Chat History (AI Buddy)
+
+```sql
+CREATE TABLE chat_history (
+  id CHAR(36) PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  role ENUM('user', 'assistant', 'system') NOT NULL,
+  content TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+```
+
 ---
 
-## 11. Create the first admin
+## 12. Create the first admin
 
 After you sign up once through the app (`/auth`), promote that user to admin:
 
