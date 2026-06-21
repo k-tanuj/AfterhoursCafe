@@ -88,7 +88,7 @@ IMPORTANT: You now have tools!
 
     try {
       const response = await generateText({
-        model: groq("llama-3.3-70b-versatile"),
+        model: groq("llama-3.1-8b-instant"),
         system,
         messages,
         tools: {
