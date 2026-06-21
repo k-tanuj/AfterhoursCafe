@@ -420,19 +420,27 @@ export function AdminOrders() {
                   <th className="px-2 py-2">Customer</th>
                   <th className="px-2 py-2 text-right">₹</th>
                   <th className="px-2 py-2">Date</th>
+                  <th className="px-2 py-2">Type</th>
                   <th className="px-2 py-2 text-center">★</th>
                   <th className="px-2 py-2 text-center">Bill</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.length === 0 && (
-                  <tr><td colSpan={5} className="px-2 py-6 text-center opacity-50 italic">no orders logged yet</td></tr>
+                  <tr><td colSpan={6} className="px-2 py-6 text-center opacity-50 italic">no orders logged yet</td></tr>
                 )}
                 {orders.map((o) => (
                   <tr key={o.id} className="border-t border-ink/5 hover:bg-accent/5">
                     <td className="px-2 py-2 truncate max-w-[90px]" title={o.customer_name}>{o.customer_name}</td>
                     <td className="px-2 py-2 text-right">{Number(o.amount).toFixed(0)}</td>
                     <td className="px-2 py-2 opacity-70">{o.order_date}</td>
+                    <td className="px-2 py-2 text-[10px] font-bold">
+                      {o.logged_by === null ? (
+                        <span className="bg-accent/10 text-accent px-1.5 py-0.5 rounded">WEBSITE</span>
+                      ) : (
+                        <span className="bg-ink/10 text-ink px-1.5 py-0.5 rounded">MANUAL</span>
+                      )}
+                    </td>
                     <td className="px-2 py-2 text-center">{o.stamp_awarded ? <span className="text-accent">+1</span> : <span className="opacity-30">—</span>}</td>
                     <td className="px-2 py-2 text-center">
                       <button 

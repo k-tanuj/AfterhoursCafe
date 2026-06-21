@@ -18,6 +18,7 @@ export type OrderRow = {
   order_date: string;
   stamp_awarded: boolean;
   items_json: string | null;
+  logged_by: string | null;
   created_at: string;
 };
 
@@ -67,7 +68,7 @@ export const getRecentOrders = createServerFn({ method: "GET" })
   .middleware([requireAdmin])
   .validator((data: { date?: string } | void) => data)
   .handler(async ({ data }): Promise<OrderRow[]> => {
-    let query = "SELECT id, customer_name, email, amount, order_date, stamp_awarded, items_json, created_at FROM orders ";
+    let query = "SELECT id, customer_name, email, amount, order_date, stamp_awarded, logged_by, items_json, created_at FROM orders ";
     const params: any[] = [];
     
     if (data && data.date) {
@@ -87,6 +88,7 @@ export const getRecentOrders = createServerFn({ method: "GET" })
       order_date: formatDateString(o.order_date),
       stamp_awarded: Boolean(o.stamp_awarded),
       items_json: o.items_json ?? null,
+      logged_by: o.logged_by ?? null,
       created_at: o.created_at ? new Date(o.created_at).toISOString() : new Date().toISOString(),
     }));
   });

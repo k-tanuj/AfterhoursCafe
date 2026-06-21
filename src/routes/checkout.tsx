@@ -18,6 +18,7 @@ function CheckoutPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const totalAmount = items.reduce(
     (acc, item) => acc + item.price * item.quantity,
@@ -45,9 +46,8 @@ function CheckoutPage() {
       });
 
       if (res.success) {
-        toast.success("Order placed successfully! Please pay at the cafe.");
         clearCart();
-        navigate({ to: "/menu" });
+        setShowSuccessModal(true);
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to submit order.");
@@ -55,6 +55,28 @@ function CheckoutPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (showSuccessModal) {
+    return (
+      <SiteShell>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-paper border border-ink/20 p-8 shadow-2xl max-w-md w-full text-center animate-in fade-in zoom-in duration-300">
+            <h2 className="font-display text-4xl text-accent mb-4">Order Placed!</h2>
+            <p className="font-mono text-sm opacity-80 mb-8 leading-relaxed">
+              Your order has been sent to our kitchen.<br /><br />
+              Please proceed to the counter and provide your name (<strong>{name}</strong>) to get your bill and pay.
+            </p>
+            <button
+              onClick={() => navigate({ to: "/menu" })}
+              className="w-full px-6 py-4 bg-ink text-paper font-mono uppercase text-sm tracking-widest hover:bg-ink/90 transition-colors"
+            >
+              Return to Menu
+            </button>
+          </div>
+        </div>
+      </SiteShell>
+    );
+  }
 
   if (items.length === 0) {
     return (
