@@ -243,7 +243,7 @@ export const submitCustomerOrder = createServerFn({ method: "POST" })
         amount,
         date,
         eligible ? 1 : 0,
-        'online',
+        null,
         itemsJson,
       ]
     );
