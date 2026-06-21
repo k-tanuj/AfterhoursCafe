@@ -77,10 +77,10 @@ function AdminAnalyticsPage() {
               Total Revenue (30d)
             </p>
             <p className="font-display text-4xl text-accent">
-              ₹{stats?.thirtyDays.revenue.toLocaleString()}
+              ₹{stats?.thirtyDays?.revenue?.toLocaleString() ?? 0}
             </p>
             <p className="font-mono text-xs opacity-50 mt-2">
-              All time: ₹{stats?.allTime.revenue.toLocaleString()}
+              All time: ₹{stats?.allTime?.revenue?.toLocaleString() ?? 0}
             </p>
           </div>
           <div className="bg-white/60 border border-ink/10 p-6">
@@ -88,10 +88,10 @@ function AdminAnalyticsPage() {
               Est. Profit (30d @ 30%)
             </p>
             <p className="font-display text-4xl text-green-700">
-              ₹{stats?.thirtyDays.profit.toLocaleString()}
+              ₹{stats?.thirtyDays?.profit?.toLocaleString() ?? 0}
             </p>
             <p className="font-mono text-xs opacity-50 mt-2">
-              All time: ₹{stats?.allTime.profit.toLocaleString()}
+              All time: ₹{stats?.allTime?.profit?.toLocaleString() ?? 0}
             </p>
           </div>
           <div className="bg-white/60 border border-ink/10 p-6">
@@ -99,10 +99,10 @@ function AdminAnalyticsPage() {
               Orders (30d)
             </p>
             <p className="font-display text-4xl">
-              {stats?.thirtyDays.orders.toLocaleString()}
+              {stats?.thirtyDays?.orders?.toLocaleString() ?? 0}
             </p>
             <p className="font-mono text-xs opacity-50 mt-2">
-              All time: {stats?.allTime.orders.toLocaleString()}
+              All time: {stats?.allTime?.orders?.toLocaleString() ?? 0}
             </p>
           </div>
         </div>

@@ -47,10 +47,18 @@ export const getMonthlyAnalytics = createServerFn({ method: "GET" })
        ORDER BY order_date ASC`
     );
 
-    return (rows ?? []).map((r: any) => ({
-      date: r.order_date,
-      revenue: Number(r.daily_revenue),
-    }));
+    return (rows ?? []).map((r: any) => {
+      let dateStr = "";
+      if (r.order_date instanceof Date) {
+        dateStr = r.order_date.toISOString().slice(0, 10);
+      } else if (typeof r.order_date === "string") {
+        dateStr = r.order_date.split("T")[0];
+      }
+      return {
+        date: dateStr,
+        revenue: Number(r.daily_revenue),
+      };
+    });
   });
 
 export const getTopSellingItems = createServerFn({ method: "GET" })
