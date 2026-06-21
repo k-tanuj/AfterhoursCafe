@@ -90,19 +90,7 @@ export const uploadPolaroid = createServerFn({ method: "POST" })
   .middleware([requireAuth])
   .validator((data: { base64Data: string; fileName: string }) => data)
   .handler(async ({ data, context }) => {
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await fs.mkdir(uploadsDir, { recursive: true });
-
-    // Remove data:image/...;base64, prefix if present
-    const base64Content = data.base64Data.replace(/^data:image\/\w+;base64,/, "");
-    const buffer = Buffer.from(base64Content, "base64");
-
-    const ext = path.extname(data.fileName) || ".jpg";
-    const newFileName = `${context.userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-    const filePath = path.join(uploadsDir, newFileName);
-
-    await fs.writeFile(filePath, buffer);
-
-    // Return the relative URL path served by Vite
-    return { photoUrl: `/uploads/${newFileName}` };
+    // Return the base64 string directly so the database can store it in the LONGTEXT column.
+    // This entirely bypasses Vercel's read-only file system restrictions.
+    return { photoUrl: data.base64Data };
   });
