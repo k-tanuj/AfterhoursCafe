@@ -15,10 +15,10 @@ const SEED: Msg[] = [
 ];
 
 const QUICK_REPLIES = [
-  "Surprise me 🎲",
-  "I need caffeine ☕",
-  "Something sweet 🍰",
-  "Show my cart 🛒",
+  "make a table reservation 📅",
+  "show me your menu 📜",
+  "want to order something ☕",
+  "whats in my cart 🛒",
 ];
 
 function BuddyMenuCard({ item, addToCart }: { item: any; addToCart: any }) {
@@ -103,8 +103,8 @@ export function AIBaristaWidget() {
     const text = textStr ?? input.trim();
     if (!text || thinking) return;
 
-    // Intercept "Show my cart" logic client side before sending to AI
-    if (text === "Show my cart 🛒") {
+    // Intercept "whats in my cart" logic client side before sending to AI
+    if (text === "whats in my cart 🛒") {
       const cartSummary = cartItems.length === 0 
         ? "Your cart is totally empty right now." 
         : `You have ${cartItems.length} items in your cart:\n` + cartItems.map(i => `- ${i.quantity}x ${i.name}`).join('\n');
