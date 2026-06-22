@@ -242,6 +242,8 @@ IMPORTANT: You now have tools!
         const tc = manualToolCalls[0];
         if (tc.toolName === 'displayMenu') {
           finalReply = `Here are some options for you! Let me know what you'd like.`;
+        } else if (tc.toolName === 'submitFeedback') {
+          finalReply = `I've noted that down and shared it with the team. Thanks for letting us know!`;
         }
       }
 
