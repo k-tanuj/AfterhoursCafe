@@ -7,6 +7,7 @@ export interface CartItem {
   name: string;
   price: number;
   quantity: number;
+  customization?: string;
 }
 
 interface CartState {
@@ -25,17 +26,18 @@ export const useCartStore = create<CartState>()(
       items: [],
       isOpen: false,
       addItem: (item) => set((state) => {
-        const existing = state.items.find(i => i.menu_item_id === item.menu_item_id);
+        const uniqueId = item.customization ? `${item.menu_item_id}-${item.customization}` : item.menu_item_id;
+        const existing = state.items.find(i => i.id === uniqueId);
         if (existing) {
           return {
             items: state.items.map(i => 
-              i.menu_item_id === item.menu_item_id ? { ...i, quantity: i.quantity + 1 } : i
+              i.id === uniqueId ? { ...i, quantity: i.quantity + (item as any).quantity || 1 } : i
             ),
             isOpen: true
           };
         }
         return {
-          items: [...state.items, { ...item, id: item.menu_item_id, quantity: 1 }],
+          items: [...state.items, { ...item, id: uniqueId, quantity: (item as any).quantity || 1 }],
           isOpen: true
         };
       }),

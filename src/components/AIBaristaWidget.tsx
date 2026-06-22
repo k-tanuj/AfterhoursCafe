@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CoffeeCup, Star } from "./Doodles";
 import { chatWithBuddy, getChatHistory } from "@/lib/buddy.functions";
-import { useAuth } from "@/hooks/use-auth";
-import { useCartStore } from "@/store/cart";
 
-type Msg = { role: "assistant" | "user" | "system"; content: string; toolCalls?: any[] };
+
+import { useAuth } from "@/hooks/use-auth";
+
+type Msg = { role: "assistant" | "user" | "system"; content: string };
 
 const SEED: Msg[] = [
   {
@@ -21,44 +22,6 @@ const QUICK_REPLIES = [
   "whats in my cart 🛒",
 ];
 
-function BuddyMenuCard({ item, addToCart }: { item: any; addToCart: any }) {
-  const [added, setAdded] = useState(false);
-
-  const handleAdd = () => {
-    // The store expects menu_item_id, name, and price
-    addToCart({ 
-      menu_item_id: item.id, 
-      name: item.name, 
-      price: Number(item.price) 
-    });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
-    
-    // Notify the rest of the app to open the cart sidebar or show toast
-    window.dispatchEvent(new CustomEvent('cart:add', { detail: { id: item.id, name: item.name, quantity: 1 }}));
-  };
-
-  return (
-    <div className="flex-shrink-0 w-48 bg-white border border-ink/10 rounded-xl p-3 shadow-sm snap-start flex flex-col gap-2">
-      <div>
-        <h4 className="font-display text-sm leading-tight">{item.name}</h4>
-        <p className="text-[10px] opacity-60 line-clamp-2 mt-0.5 leading-snug">{item.description}</p>
-      </div>
-      <div className="flex items-center justify-between mt-auto pt-2 border-t border-ink/5">
-        <span className="font-mono text-xs opacity-80">₹{item.price}</span>
-        <button
-          onClick={handleAdd}
-          className={`px-2.5 py-1 rounded text-[10px] uppercase font-mono transition-all shadow-sm ${
-            added ? "bg-green-600 text-white" : "bg-accent text-white hover:scale-105"
-          }`}
-        >
-          {added ? "✓ Added" : "+ Add"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export function AIBaristaWidget() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -71,8 +34,6 @@ export function AIBaristaWidget() {
   
   const chat = useServerFn(chatWithBuddy);
   const fetchHistory = useServerFn(getChatHistory);
-  const addToCart = useCartStore((s) => s.addItem);
-  const cartItems = useCartStore((s) => s.items);
 
   // Open handler
   useEffect(() => {
@@ -103,13 +64,8 @@ export function AIBaristaWidget() {
     const text = textStr ?? input.trim();
     if (!text || thinking) return;
 
-    // Intercept "whats in my cart" logic client side before sending to AI
     if (text === "whats in my cart 🛒") {
-      const cartSummary = cartItems.length === 0 
-        ? "Your cart is totally empty right now." 
-        : `You have ${cartItems.length} items in your cart:\n` + cartItems.map(i => `- ${i.quantity}x ${i.name}`).join('\n');
-      
-      setMsgs((m) => [...m, { role: "user", content: text }, { role: "assistant", content: cartSummary }]);
+      setMsgs((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "I can't check your cart right now, but you can view it by clicking the floating cart button on the screen!" }]);
       setInput("");
       return;
     }
@@ -121,11 +77,9 @@ export function AIBaristaWidget() {
     
     try {
       // Send only the new message to the backend; it fetches history internally
-      const { reply, toolCalls } = await chat({ data: { message: text } });
+      const { reply } = await chat({ data: { message: text } });
       
-      setMsgs((m) => [...m, { role: "assistant", content: reply, toolCalls }]);
-
-      // We don't automatically add to cart anymore, the user clicks the button on the UI card.
+      setMsgs((m) => [...m, { role: "assistant", content: reply }]);
 
     } catch (e) {
       const msg = e instanceof Error ? e.message : "something broke. try again?";
@@ -166,7 +120,7 @@ export function AIBaristaWidget() {
               const isAssistant = m.role === "assistant";
               return (
                 <div key={i} className={isAssistant ? "flex flex-col items-start w-full overflow-hidden" : "flex flex-col items-end w-full overflow-hidden"}>
-                  <div
+                    <div
                     className={
                       isAssistant
                         ? "bg-white border border-ink/10 text-ink rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%] whitespace-pre-wrap leading-relaxed shadow-sm"
@@ -176,20 +130,6 @@ export function AIBaristaWidget() {
                     {m.content}
                   </div>
                   
-                  {/* Render Rich Tool Calls */}
-                  {m.toolCalls && m.toolCalls.map((tc, tcIdx) => {
-                    if (tc.toolName === 'displayMenu' && tc.args.items && tc.args.items.length > 0) {
-                      return (
-                        <div key={tcIdx} className="w-[calc(100%+1.25rem)] -ml-5 pl-5 pr-5 mt-3 overflow-x-auto scrollbar-none snap-x flex gap-3 pb-2">
-                          {tc.args.items.map((item: any) => (
-                            <BuddyMenuCard key={item.id} item={item} addToCart={addToCart} />
-                          ))}
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
-
                   <span className="font-mono text-[9px] opacity-40 mt-1.5 px-1 uppercase">
                     {isAssistant ? "Buddy" : "You"}
                   </span>

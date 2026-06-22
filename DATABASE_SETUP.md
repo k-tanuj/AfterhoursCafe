@@ -129,31 +129,36 @@ CREATE TABLE bookings (
 
 ```sql
 CREATE TABLE menu_items (
-  id           CHAR(36)       NOT NULL PRIMARY KEY,
-  name         VARCHAR(160)   NOT NULL,
-  category     VARCHAR(60)    NOT NULL,
-  description  TEXT           NOT NULL,
-  price        DECIMAL(10,2)  NOT NULL,
-  image_url    TEXT,
-  sort_order   INT            NOT NULL DEFAULT 100,
-  is_available TINYINT(1)     NOT NULL DEFAULT 1,
-  created_at   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP
-                              ON UPDATE CURRENT_TIMESTAMP,
+  id               CHAR(36)       NOT NULL PRIMARY KEY,
+  name             VARCHAR(160)   NOT NULL,
+  category         VARCHAR(60)    NOT NULL,
+  description      TEXT           NOT NULL,
+  price            DECIMAL(10,2)  NOT NULL,
+  image_url        TEXT,
+  taste_profile    VARCHAR(100),
+  temperature      VARCHAR(50),
+  caffeine_level   VARCHAR(50),
+  dietary_tags     VARCHAR(100),
+  popularity_score INT            DEFAULT 50,
+  sort_order       INT            NOT NULL DEFAULT 100,
+  is_available     TINYINT(1)     NOT NULL DEFAULT 1,
+  created_at       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                  ON UPDATE CURRENT_TIMESTAMP,
   CHECK (price >= 0)
 ) ENGINE=InnoDB;
 
 -- Seed menu
-INSERT INTO menu_items (id, name, category, description, price, sort_order) VALUES
-  (UUID(),'Ghost Shot Espresso','Strong','Double shot, no sugar, no mercy.',180,10),
-  (UUID(),'Cloudy Cold Brew','Cold','12-hour brew, vanilla cream cloud.',220,20),
-  (UUID(),'Midnight Matcha','Sweet','Ceremonial grade, oat milk leaf.',260,30),
-  (UUID(),'Lavender Fog','Hot','Earl grey + steamed milk + lavender.',200,40),
-  (UUID(),'Burnt Honey Latte','Sweet','Caramelised honey, espresso, foam.',240,50),
-  (UUID(),'Saffron Cortado','Strong','Saffron-laced milk, two shots.',280,60),
-  (UUID(),'Study Drip','Study','Bottomless filter coffee, 3pm to 3am.',150,70),
-  (UUID(),'3am Mocha','Late Night','Dark chocolate, espresso, oat.',250,80),
-  (UUID(),'Insomnia Iced','Late Night','Cold brew + tonic. Bad idea, great taste.',230,90);
+INSERT INTO menu_items (id, name, category, description, price, sort_order, taste_profile, temperature, caffeine_level, dietary_tags, popularity_score) VALUES
+  (UUID(),'Ghost Shot Espresso','Strong','Double shot, no sugar, no mercy.',180,10,'Bitter, Strong','Hot','High','Vegan, Dairy-Free',85),
+  (UUID(),'Cloudy Cold Brew','Cold','12-hour brew, vanilla cream cloud.',220,20,'Smooth, Creamy','Cold','High','Vegetarian',95),
+  (UUID(),'Midnight Matcha','Sweet','Ceremonial grade, oat milk leaf.',260,30,'Sweet, Earthy','Hot','Low','Vegan',90),
+  (UUID(),'Lavender Fog','Hot','Earl grey + steamed milk + lavender.',200,40,'Floral, Sweet','Hot','Low','Vegetarian',80),
+  (UUID(),'Burnt Honey Latte','Sweet','Caramelised honey, espresso, foam.',240,50,'Sweet, Caramel','Hot','Medium','Vegetarian',88),
+  (UUID(),'Saffron Cortado','Strong','Saffron-laced milk, two shots.',280,60,'Spiced, Strong','Hot','Medium','Vegetarian',75),
+  (UUID(),'Study Drip','Study','Bottomless filter coffee, 3pm to 3am.',150,70,'Bitter, Clean','Hot','High','Vegan, Dairy-Free',99),
+  (UUID(),'3am Mocha','Late Night','Dark chocolate, espresso, oat.',250,80,'Chocolate, Sweet','Hot','Medium','Vegetarian',92),
+  (UUID(),'Insomnia Iced','Late Night','Cold brew + tonic. Bad idea, great taste.',230,90,'Crisp, Bubbly','Cold','High','Vegan, Dairy-Free',85);
 ```
 
 ## 6. Loyalty — customers & orders
