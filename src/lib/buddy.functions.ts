@@ -90,7 +90,7 @@ IMPORTANT: You now have tools!
 
     try {
       const response = await generateText({
-        model: google("gemini-1.5-flash-latest"),
+        model: google("gemini-2.5-flash"),
         system,
         messages,
         tools: {
