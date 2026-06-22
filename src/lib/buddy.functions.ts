@@ -69,6 +69,28 @@ export const chatWithBuddy = createServerFn({ method: "POST" })
     const weathers = ["a quiet, misty night", "raining lightly outside", "a clear, starry night", "a bit chilly tonight"];
     const weather = weathers[now.getHours() % weathers.length];
 
+    // Fetch user order history
+    const userEmail = context.user?.email;
+    let orderHistory = "";
+    if (userEmail) {
+      const [pastOrders]: any = await db.execute(
+        "SELECT order_date, items_json FROM orders WHERE email = ? ORDER BY created_at DESC LIMIT 3",
+        [userEmail]
+      );
+      if (pastOrders && pastOrders.length > 0) {
+        orderHistory = "\n### USER'S PAST ORDERS (Use this to personalize recommendations or 'the usual'):\n";
+        pastOrders.forEach((o: any) => {
+          if (o.items_json) {
+            try {
+               const items = JSON.parse(o.items_json);
+               const itemNames = items.map((i: any) => `${i.quantity}x ${i.name}`).join(', ');
+               orderHistory += `- ${o.order_date}: ${itemNames}\n`;
+            } catch (e) {}
+          }
+        });
+      }
+    }
+
     const system = `You are "Buddy" — the late-night companion at AFTERHOURS, a chill café open from 12 pm to 3 am.
 Current context: It is ${timeStr} on a ${dayStr}, and it is ${weather}. Use this to set the mood!
 
@@ -78,13 +100,26 @@ You are NOT just a menu bot. You're the friend at the next table:
 - short replies (1–4 sentences max). casual lowercase tone okay
 - mix English + Hindi/Hinglish naturally if the user does. never force it
 
+### CAFÉ KNOWLEDGE (Use this to answer customer questions):
+- **Hours**: Open every day from 12 PM to 3 AM.
+- **Location**: We are located in the heart of the city, at 123 AfterHours Avenue.
+- **Wi-Fi**: The Wi-Fi network is "AfterHours_Guest" and the password is "afterhours123".
+- **Parking**: Free parking is available right behind the café building.
+- **Dietary/Vegan**: We have several vegan and gluten-free options. We offer Oat and Soy milk alternatives for all coffees.
+
 When recommending items, pick 2-3 from this live menu based on their mood/time:
 ${menuLine}
 
 IMPORTANT: You now have tools! 
 - If the user asks to see the menu, or asks to see a specific category of items (e.g., "show me toasts"), use the \`displayMenu\` tool.
 - If you recommend specific items (e.g., "You should try the Nutella Dream Waffle"), use the \`displayMenu\` tool with those specific item IDs so the user can see them and add them to their cart.
-- DO NOT use any HTML tags or markdown to call tools. Simply invoke the tool natively.`;
+- DO NOT use any HTML tags or markdown to call tools. Simply invoke the tool natively.
+- To book a table, ALWAYS use the \`bookTable\` tool. You MUST ask the user for the date, time, party size, and their phone number before booking.
+- If the user provides feedback about their food, visit, or experience (positive or negative), ALWAYS use the \`submitFeedback\` tool to log it.
+
+### USER CONTEXT
+- Name: ${context.user?.display_name || 'Guest'}
+- Email: ${context.user?.email || ''}${orderHistory}`;
 
     const google = createGoogleGenerativeAI({ apiKey: key });
 
@@ -104,8 +139,66 @@ IMPORTANT: You now have tools!
               // The frontend intercepts this to render the rich UI menu
               return { success: true, category, itemIds };
             },
+          }),
+          bookTable: tool({
+            description: "Book a table for the user. Ask the user for date, time, party size, and their phone number before calling this.",
+            parameters: z.object({
+              booking_date: z.string().describe("Date in YYYY-MM-DD format"),
+              booking_time: z.string().describe("Time in HH:MM format (e.g. 19:30)"),
+              party: z.number().describe("Number of guests"),
+              guest_phone: z.string().describe("The guest's phone number"),
+            }),
+            execute: async ({ booking_date, booking_time, party, guest_phone }) => {
+              const [userRows]: any = await db.execute("SELECT display_name, email FROM users WHERE id = ?", [userId]);
+              const guest_name = userRows[0]?.display_name || "Guest";
+              const guest_email = userRows[0]?.email || "guest@example.com";
+
+              const [tables]: any = await db.execute(
+                "SELECT id, table_no, capacity FROM restaurant_tables WHERE is_active = 1 AND capacity >= ? ORDER BY capacity ASC",
+                [party]
+              );
+              if (!tables || tables.length === 0) return { success: false, message: "Sorry, we don't have tables large enough for your party." };
+
+              const [taken]: any = await db.execute(
+                "SELECT table_id FROM bookings WHERE booking_date = ? AND booking_time = ? AND status NOT IN ('cancelled', 'no_show')",
+                [booking_date, booking_time]
+              );
+              const busy = new Set((taken ?? []).map((r: any) => r.table_id));
+              const pick = tables.find((t: any) => !busy.has(t.id));
+              if (!pick) return { success: false, message: "Sorry, all tables are fully booked for that time slot. Can we try a different time?" };
+
+              const a = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+              let code = "AH-";
+              for (let i = 0; i < 6; i++) code += a[Math.floor(Math.random() * a.length)];
+
+              await db.execute(
+                `INSERT INTO bookings (
+                  id, user_id, booking_date, booking_time, party,
+                  guest_name, guest_phone, guest_email, status,
+                  table_id, reference_code
+                ) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?)`,
+                [userId, booking_date, booking_time, party, guest_name, guest_phone, guest_email, pick.id, code]
+              );
+
+              return { success: true, message: `Table ${pick.table_no} is successfully booked! The reference code is ${code}. Tell the user they are all set.` };
+            }
+          }),
+          submitFeedback: tool({
+            description: "Submit customer feedback about their food, experience, or the café. Use this if the user expresses strong sentiment (positive or negative) about their order or visit.",
+            parameters: z.object({
+              rating: z.number().min(1).max(5).describe("Estimated rating based on sentiment (1 for terrible, 5 for amazing)"),
+              message: z.string().describe("The feedback message to log"),
+            }),
+            execute: async ({ rating, message }) => {
+              await db.execute(
+                `INSERT INTO feedback (id, user_id, rating, message) VALUES (UUID(), ?, ?, ?)`,
+                [userId, rating, `[Via Buddy] ${message}`]
+              );
+              return { success: true, message: "Feedback logged! Thank the user for their feedback." };
+            }
           })
-        }
+        },
+        maxSteps: 2,
       });
 
       let rawText = response.text || "";
