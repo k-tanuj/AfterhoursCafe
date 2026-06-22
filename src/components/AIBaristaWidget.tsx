@@ -15,13 +15,6 @@ const SEED: Msg[] = [
   },
 ];
 
-const QUICK_REPLIES = [
-  "make a table reservation 📅",
-  "show me your menu 📜",
-  "want to order something ☕",
-  "whats in my cart 🛒",
-];
-
 export function AIBaristaWidget() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -152,20 +145,6 @@ export function AIBaristaWidget() {
 
           {/* Input Area */}
           <div className="flex-shrink-0 bg-white/50 border-t border-ink/10 p-4">
-            {/* Quick Replies */}
-            <div className="flex gap-2 overflow-x-auto pb-3 mb-1 scrollbar-none snap-x">
-              {QUICK_REPLIES.map((qr) => (
-                <button
-                  key={qr}
-                  onClick={() => send(qr)}
-                  disabled={thinking}
-                  className="whitespace-nowrap snap-start px-3 py-1.5 rounded-full bg-ink/5 border border-ink/10 text-xs font-mono text-ink/80 hover:bg-ink/10 transition-colors disabled:opacity-30"
-                >
-                  {qr}
-                </button>
-              ))}
-            </div>
-
             <div className="relative flex items-center">
               <input
                 value={input}
