@@ -142,14 +142,17 @@ IMPORTANT: You now have tools!
             },
           }),
           bookTable: tool({
-            description: "Book a table for the user. Ask the user for date, time, party size, and their phone number before calling this.",
+            description: "Book a table for the user. If you are missing details, call this tool anyway and it will tell you what to ask.",
             parameters: z.object({
-              booking_date: z.string().describe("Date in YYYY-MM-DD format"),
-              booking_time: z.string().describe("Time in HH:MM format (e.g. 19:30)"),
-              party: z.number().describe("Number of guests"),
-              guest_phone: z.string().describe("The guest's phone number"),
+              booking_date: z.string().optional().describe("Date in YYYY-MM-DD format"),
+              booking_time: z.string().optional().describe("Time in HH:MM format (e.g. 19:30)"),
+              party: z.number().optional().describe("Number of guests"),
+              guest_phone: z.string().optional().describe("The guest's phone number"),
             }),
             execute: async ({ booking_date, booking_time, party, guest_phone }) => {
+              if (!booking_date || !booking_time || !party || !guest_phone) {
+                return { success: false, message: "Missing details. Ask the user for the missing reservation details (date, time, party size, and phone number) to proceed." };
+              }
               const [userRows]: any = await db.execute("SELECT display_name, email FROM users WHERE id = ?", [userId]);
               const guest_name = userRows[0]?.display_name || "Guest";
               const guest_email = userRows[0]?.email || "guest@example.com";
@@ -187,10 +190,13 @@ IMPORTANT: You now have tools!
           submitFeedback: tool({
             description: "Submit customer feedback about their food, experience, or the café. Use this if the user expresses strong sentiment (positive or negative) about their order or visit.",
             parameters: z.object({
-              rating: z.number().min(1).max(5).describe("Estimated rating based on sentiment (1 for terrible, 5 for amazing)"),
-              message: z.string().describe("The feedback message to log"),
+              rating: z.number().min(1).max(5).optional().describe("Estimated rating based on sentiment (1 for terrible, 5 for amazing)"),
+              message: z.string().optional().describe("The feedback message to log"),
             }),
             execute: async ({ rating, message }) => {
+              if (!rating || !message) {
+                 return { success: false, message: "Missing feedback details. Ask the user to clarify their feedback." };
+              }
               await db.execute(
                 `INSERT INTO feedback (id, user_id, rating, message) VALUES (UUID(), ?, ?, ?)`,
                 [userId, rating, `[Via Buddy] ${message}`]
