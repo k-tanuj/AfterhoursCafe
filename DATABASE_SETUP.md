@@ -183,6 +183,7 @@ CREATE TABLE orders (
   amount         DECIMAL(10,2) NOT NULL,
   order_date     DATE          NOT NULL,
   stamp_awarded  TINYINT(1)    NOT NULL DEFAULT 0,
+  status         ENUM('placed', 'preparing', 'completed') NOT NULL DEFAULT 'completed',
   logged_by      CHAR(36),
   created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_orders_customer

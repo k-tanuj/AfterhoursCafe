@@ -17,6 +17,7 @@ export type OrderRow = {
   amount: number;
   order_date: string;
   stamp_awarded: boolean;
+  status: 'placed' | 'preparing' | 'completed';
   items_json: string | null;
   logged_by: string | null;
   created_at: string;
@@ -68,14 +69,14 @@ export const getRecentOrders = createServerFn({ method: "GET" })
   .middleware([requireAdmin])
   .validator((data: { date?: string } | void) => data)
   .handler(async ({ data }): Promise<OrderRow[]> => {
-    let query = "SELECT id, customer_name, email, amount, order_date, stamp_awarded, logged_by, items_json, created_at FROM orders ";
+    let query = "SELECT id, customer_name, email, amount, order_date, stamp_awarded, status, logged_by, items_json, created_at FROM orders ";
     const params: any[] = [];
     
     if (data && data.date) {
-      query += "WHERE order_date = ? ORDER BY created_at DESC LIMIT 100";
+      query += "WHERE order_date = ? ORDER BY created_at ASC LIMIT 100";
       params.push(data.date);
     } else {
-      query += "ORDER BY created_at DESC LIMIT 15";
+      query += "ORDER BY created_at ASC LIMIT 100";
     }
     
     const [rows]: any = await db.execute(query, params);
@@ -87,10 +88,19 @@ export const getRecentOrders = createServerFn({ method: "GET" })
       amount: Number(o.amount),
       order_date: formatDateString(o.order_date),
       stamp_awarded: Boolean(o.stamp_awarded),
+      status: o.status ?? 'completed',
       items_json: o.items_json ?? null,
       logged_by: o.logged_by ?? null,
       created_at: o.created_at ? new Date(o.created_at).toISOString() : new Date().toISOString(),
     }));
+  });
+
+export const updateOrderStatus = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator((data: { id: string; status: 'placed' | 'preparing' | 'completed' }) => data)
+  .handler(async ({ data }) => {
+    await db.execute("UPDATE orders SET status = ? WHERE id = ?", [data.status, data.id]);
+    return { success: true };
   });
 
 export const getTopLoyaltyCustomers = createServerFn({ method: "GET" })
@@ -152,8 +162,8 @@ export const logOfflineOrder = createServerFn({ method: "POST" })
 
     // 2. Insert order
     await db.execute(
-      `INSERT INTO orders (id, customer_id, customer_name, email, amount, order_date, stamp_awarded, logged_by, items_json) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (id, customer_id, customer_name, email, amount, order_date, stamp_awarded, status, logged_by, items_json) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'placed', ?, ?)`,
       [
         orderId,
         customer.id,
@@ -235,8 +245,8 @@ export const submitCustomerOrder = createServerFn({ method: "POST" })
 
     // 2. Insert order (logged_by is 'online' or null)
     await db.execute(
-      `INSERT INTO orders (id, customer_id, customer_name, email, amount, order_date, stamp_awarded, logged_by, items_json) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (id, customer_id, customer_name, email, amount, order_date, stamp_awarded, status, logged_by, items_json) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'placed', ?, ?)`,
       [
         orderId,
         customer.id,

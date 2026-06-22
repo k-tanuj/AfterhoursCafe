@@ -176,6 +176,7 @@ function ProfilePage() {
           <div className="grid grid-cols-5 gap-4">
             {Array.from({ length: 10 }).map((_, i) => {
               const filled = i < stamps;
+              const stampDate = loyalty?.stamp_dates?.[i];
               // deterministic pseudo-random offset + rotation per slot
               const seed = (i * 9301 + 49297) % 233280;
               const rand = seed / 233280;
@@ -183,27 +184,33 @@ function ProfilePage() {
               const dy = ((rand * 7) % 1 - 0.5) * 22;
               const rot = (rand * 40) - 20; // -20° .. 20°
               return (
-                <div
-                  key={i}
-                  className={`relative aspect-square rounded-full border border-ink/20 overflow-hidden ${
-                    filled ? "bg-accent/10" : ""
-                  }`}
-                >
-                  {filled ? (
-                    <Svg
-                      name="filled-coffee-cup"
-                      className={`absolute w-[85%] h-[85%] object-contain ${i === stamps - 1 ? "animate-paper-float" : ""}`}
-                      style={{
-                        left: `calc(50% - 42.5% + ${dx}%)`,
-                        top: `calc(50% - 42.5% + ${dy}%)`,
-                        transform: `rotate(${rot}deg)`,
-                      }}
-                    />
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <div
+                    className={`relative w-full aspect-square rounded-full border border-ink/20 overflow-hidden ${
+                      filled ? "bg-accent/10" : ""
+                    }`}
+                  >
+                    {filled ? (
+                      <Svg
+                        name="filled-coffee-cup"
+                        className={`absolute w-[85%] h-[85%] object-contain ${i === stamps - 1 ? "animate-paper-float" : ""}`}
+                        style={{
+                          left: `calc(50% - 42.5% + ${dx}%)`,
+                          top: `calc(50% - 42.5% + ${dy}%)`,
+                          transform: `rotate(${rot}deg)`,
+                        }}
+                      />
+                    ) : (
+                      <Svg
+                        name="empty-coffee-cup"
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 object-contain opacity-30"
+                      />
+                    )}
+                  </div>
+                  {filled && stampDate ? (
+                    <span className="font-mono text-[9px] opacity-60">{stampDate}</span>
                   ) : (
-                    <Svg
-                      name="empty-coffee-cup"
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 object-contain opacity-30"
-                    />
+                    <span className="font-mono text-[9px] opacity-0">-</span>
                   )}
                 </div>
               );

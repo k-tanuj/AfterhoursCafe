@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getRecentOrders, getTopLoyaltyCustomers, logOfflineOrder, type OrderRow, type CustomerRow, type OrderItem } from "@/lib/orders.functions";
+import { getRecentOrders, getTopLoyaltyCustomers, logOfflineOrder, updateOrderStatus, type OrderRow, type CustomerRow, type OrderItem } from "@/lib/orders.functions";
 import { getMenu } from "@/lib/menu.functions";
 import { getAdminTables, getAdminBookings, type AdminTable, type AdminBookingRow } from "@/lib/admin.functions";
 import { Stamp } from "@/components/Doodles";
@@ -36,6 +36,7 @@ export function AdminOrders() {
   const fetchMenu = useServerFn(getMenu);
   const fetchTables = useServerFn(getAdminTables);
   const fetchBookings = useServerFn(getAdminBookings);
+  const changeOrderStatus = useServerFn(updateOrderStatus);
 
   const [filterDate, setFilterDate] = useState<string>("");
 
@@ -67,6 +68,17 @@ export function AdminOrders() {
 
   useEffect(() => { loadAll(); }, []);
   useEffect(() => { loadOrders(); }, [filterDate]);
+
+  const handleStatusChange = async (id: string, status: 'placed' | 'preparing' | 'completed') => {
+    try {
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+      await changeOrderStatus({ data: { id, status } });
+      loadOrders(); // Refresh to ensure correct order
+    } catch (e: any) {
+      toast.error(e.message);
+      loadOrders(); // Revert on failure
+    }
+  };
 
   // Update amount automatically based on cart items
   useEffect(() => {
@@ -401,62 +413,100 @@ export function AdminOrders() {
       );
       })()}
 
-      {/* Tables Row */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="font-mono text-[10px] uppercase tracking-widest opacity-50">Recent orders</p>
-            <input 
-              type="date" 
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="bg-paper/60 border border-ink/15 px-2 py-1 font-mono text-[10px] focus:outline-none focus:border-accent"
-            />
+      {/* Kanban Board Row */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <p className="font-mono text-[10px] uppercase tracking-widest opacity-50">Order Queue</p>
+          <input 
+            type="date" 
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="bg-paper/60 border border-ink/15 px-2 py-1 font-mono text-[10px] focus:outline-none focus:border-accent"
+          />
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Placed Column */}
+          <div className="bg-ink/5 border border-ink/10 p-4 h-[600px] flex flex-col">
+            <h4 className="font-display text-xl mb-4 text-ink flex justify-between items-center">
+              Placed 
+              <span className="bg-ink text-paper text-xs px-2 py-1 rounded-full">{orders.filter(o => o.status === 'placed').length}</span>
+            </h4>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
+              {orders.filter(o => o.status === 'placed').map(o => (
+                <div key={o.id} className="bg-paper border border-ink/10 p-3 shadow-sm hover:border-accent/50 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-bold truncate max-w-[150px] text-sm" title={o.customer_name}>{o.customer_name}</p>
+                    <p className="text-accent font-bold text-sm">₹{Number(o.amount).toFixed(0)}</p>
+                  </div>
+                  <p className="font-mono text-[10px] opacity-60 mb-1">{o.logged_by === null ? 'ONLINE' : 'WALK-IN'} · {new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                  <p className="font-mono text-[10px] opacity-60 truncate mb-3">{o.email}</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setReceiptOrder(o)} className="flex-1 py-1.5 border border-ink/20 font-mono text-[9px] uppercase hover:bg-ink/5">View Bill</button>
+                    <button onClick={() => handleStatusChange(o.id, 'preparing')} className="flex-1 py-1.5 bg-ink text-paper font-mono text-[9px] uppercase hover:bg-ink/90">Move to Preparing</button>
+                  </div>
+                </div>
+              ))}
+              {orders.filter(o => o.status === 'placed').length === 0 && (
+                <div className="text-center p-6 opacity-30 font-mono text-xs italic">No placed orders</div>
+              )}
+            </div>
           </div>
-          <div className="max-h-72 overflow-auto border border-ink/10">
-            <table className="w-full font-mono text-xs">
-              <thead className="bg-ink/5 sticky top-0">
-                <tr className="text-left">
-                  <th className="px-2 py-2">Customer</th>
-                  <th className="px-2 py-2 text-right">₹</th>
-                  <th className="px-2 py-2">Date</th>
-                  <th className="px-2 py-2">Type</th>
-                  <th className="px-2 py-2 text-center">★</th>
-                  <th className="px-2 py-2 text-center">Bill</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.length === 0 && (
-                  <tr><td colSpan={6} className="px-2 py-6 text-center opacity-50 italic">no orders logged yet</td></tr>
-                )}
-                {orders.map((o) => (
-                  <tr key={o.id} className="border-t border-ink/5 hover:bg-accent/5">
-                    <td className="px-2 py-2 truncate max-w-[90px]" title={o.customer_name}>{o.customer_name}</td>
-                    <td className="px-2 py-2 text-right">{Number(o.amount).toFixed(0)}</td>
-                    <td className="px-2 py-2 opacity-70">{o.order_date}</td>
-                    <td className="px-2 py-2 text-[10px] font-bold">
-                      {o.logged_by === null ? (
-                        <span className="bg-accent/10 text-accent px-1.5 py-0.5 rounded">WEBSITE</span>
-                      ) : (
-                        <span className="bg-ink/10 text-ink px-1.5 py-0.5 rounded">MANUAL</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-2 text-center">{o.stamp_awarded ? <span className="text-accent">+1</span> : <span className="opacity-30">—</span>}</td>
-                    <td className="px-2 py-2 text-center">
-                      <button 
-                        type="button" 
-                        onClick={() => setReceiptOrder(o)}
-                        className="text-[10px] uppercase text-accent hover:underline"
-                      >
-                        view
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          {/* Preparing Column */}
+          <div className="bg-accent/5 border border-accent/20 p-4 h-[600px] flex flex-col">
+            <h4 className="font-display text-xl mb-4 text-accent flex justify-between items-center">
+              Preparing
+              <span className="bg-accent text-paper text-xs px-2 py-1 rounded-full">{orders.filter(o => o.status === 'preparing').length}</span>
+            </h4>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
+              {orders.filter(o => o.status === 'preparing').map(o => (
+                <div key={o.id} className="bg-paper border-l-4 border-accent p-3 shadow-md">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-bold truncate max-w-[150px] text-sm text-accent" title={o.customer_name}>{o.customer_name}</p>
+                    <p className="font-bold text-sm">₹{Number(o.amount).toFixed(0)}</p>
+                  </div>
+                  <p className="font-mono text-[10px] opacity-60 mb-1">{o.logged_by === null ? 'ONLINE' : 'WALK-IN'} · {new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                  <p className="font-mono text-[10px] opacity-60 truncate mb-3">{o.email}</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setReceiptOrder(o)} className="flex-1 py-1.5 border border-ink/20 font-mono text-[9px] uppercase hover:bg-ink/5">View Bill</button>
+                    <button onClick={() => handleStatusChange(o.id, 'completed')} className="flex-1 py-1.5 bg-accent text-paper font-mono text-[9px] uppercase hover:bg-accent/90">Mark as Given</button>
+                  </div>
+                </div>
+              ))}
+              {orders.filter(o => o.status === 'preparing').length === 0 && (
+                <div className="text-center p-6 opacity-30 font-mono text-xs italic">Nothing in prep</div>
+              )}
+            </div>
+          </div>
+
+          {/* Completed Column */}
+          <div className="bg-green-50 border border-green-200 p-4 h-[600px] flex flex-col">
+            <h4 className="font-display text-xl mb-4 text-green-700 flex justify-between items-center">
+              Gave the order
+              <span className="bg-green-600 text-paper text-xs px-2 py-1 rounded-full">{orders.filter(o => o.status === 'completed').length}</span>
+            </h4>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
+              {[...orders].filter(o => o.status === 'completed').reverse().map(o => (
+                <div key={o.id} className="bg-white border border-green-200 p-3 shadow-sm opacity-80">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-bold truncate max-w-[150px] text-sm text-green-800" title={o.customer_name}>{o.customer_name}</p>
+                    <p className="text-green-800 font-bold text-sm">₹{Number(o.amount).toFixed(0)}</p>
+                  </div>
+                  <p className="font-mono text-[10px] opacity-60 mb-1">{o.logged_by === null ? 'ONLINE' : 'WALK-IN'} · {new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                  <p className="font-mono text-[10px] opacity-60 truncate mb-3">{o.email}</p>
+                  <button onClick={() => setReceiptOrder(o)} className="w-full py-1.5 border border-green-300 text-green-700 font-mono text-[9px] uppercase hover:bg-green-100">View Bill</button>
+                </div>
+              ))}
+              {orders.filter(o => o.status === 'completed').length === 0 && (
+                <div className="text-center p-6 opacity-30 font-mono text-xs italic">No completed orders</div>
+              )}
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="grid md:grid-cols-1 gap-6 mt-10">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest opacity-50 mb-2">Top loyalty cards</p>
           <div className="space-y-2 max-h-72 overflow-auto">
