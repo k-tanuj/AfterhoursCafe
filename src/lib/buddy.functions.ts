@@ -202,7 +202,14 @@ IMPORTANT: You now have tools!
       });
 
       let rawText = response.text || "";
-      let manualToolCalls = response.toolCalls ? [...response.toolCalls] : [];
+      let manualToolCalls: any[] = [];
+      if (response.steps && response.steps.length > 0) {
+        response.steps.forEach(step => {
+          if (step.toolCalls) manualToolCalls.push(...step.toolCalls);
+        });
+      } else if (response.toolCalls) {
+        manualToolCalls = [...response.toolCalls];
+      }
 
       // Fix Groq LLaMA model leaking tool calls as raw text
       const functionRegex = /<function=(\w+)>(.*?)<\/function>/g;
