@@ -5,27 +5,32 @@ import { OrderItem } from "./orders.functions";
 
 export const getDashboardStats = createServerFn({ method: "GET" })
   .middleware([requireAdmin])
-  .handler(async () => {
-    // Basic stats: total revenue, order count, and a rough profit margin estimate
-    // A full implementation would compare periods, but we'll do an all-time and last 30 days summary
+  .validator((data: { filter?: 'today' | 'weekly' | 'monthly' | 'yearly' } | void) => data)
+  .handler(async ({ data }) => {
+    const filter = data?.filter || 'monthly';
+    let intervalClause = "DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+    if (filter === 'today') intervalClause = "CURDATE()";
+    else if (filter === 'weekly') intervalClause = "DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+    else if (filter === 'monthly') intervalClause = "DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+    else if (filter === 'yearly') intervalClause = "DATE_SUB(CURDATE(), INTERVAL 365 DAY)";
 
-    const [[thirtyDays]]: any = await db.execute(
-      "SELECT SUM(amount) as revenue, COUNT(*) as orders FROM orders WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+    const [[periodStats]]: any = await db.execute(
+      `SELECT SUM(amount) as revenue, COUNT(*) as orders FROM orders WHERE order_date >= ${intervalClause}`
     );
 
     const [[allTime]]: any = await db.execute(
       "SELECT SUM(amount) as revenue, COUNT(*) as orders FROM orders"
     );
 
-    const revenue30 = Number(thirtyDays.revenue || 0);
-    const orders30 = Number(thirtyDays.orders || 0);
-    const profit30 = revenue30 * 0.3; // 30% estimated profit margin
+    const revenuePeriod = Number(periodStats.revenue || 0);
+    const ordersPeriod = Number(periodStats.orders || 0);
+    const profitPeriod = revenuePeriod * 0.3; // 30% estimated profit margin
 
     return {
-      thirtyDays: {
-        revenue: revenue30,
-        orders: orders30,
-        profit: profit30,
+      period: {
+        revenue: revenuePeriod,
+        orders: ordersPeriod,
+        profit: profitPeriod,
       },
       allTime: {
         revenue: Number(allTime.revenue || 0),
@@ -37,12 +42,20 @@ export const getDashboardStats = createServerFn({ method: "GET" })
 
 export const getMonthlyAnalytics = createServerFn({ method: "GET" })
   .middleware([requireAdmin])
-  .handler(async () => {
-    // Get sales grouped by day for the last 30 days
+  .validator((data: { filter?: 'today' | 'weekly' | 'monthly' | 'yearly' } | void) => data)
+  .handler(async ({ data }) => {
+    const filter = data?.filter || 'monthly';
+    let intervalClause = "DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+    if (filter === 'today') intervalClause = "CURDATE()";
+    else if (filter === 'weekly') intervalClause = "DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+    else if (filter === 'monthly') intervalClause = "DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+    else if (filter === 'yearly') intervalClause = "DATE_SUB(CURDATE(), INTERVAL 365 DAY)";
+
+    // Get sales grouped by day
     const [rows]: any = await db.execute(
       `SELECT order_date, SUM(amount) as daily_revenue 
        FROM orders 
-       WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) 
+       WHERE order_date >= ${intervalClause} 
        GROUP BY order_date 
        ORDER BY order_date ASC`
     );
@@ -63,10 +76,18 @@ export const getMonthlyAnalytics = createServerFn({ method: "GET" })
 
 export const getTopSellingItems = createServerFn({ method: "GET" })
   .middleware([requireAdmin])
-  .handler(async () => {
+  .validator((data: { filter?: 'today' | 'weekly' | 'monthly' | 'yearly' } | void) => data)
+  .handler(async ({ data }) => {
+    const filter = data?.filter || 'monthly';
+    let intervalClause = "DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+    if (filter === 'today') intervalClause = "CURDATE()";
+    else if (filter === 'weekly') intervalClause = "DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+    else if (filter === 'monthly') intervalClause = "DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+    else if (filter === 'yearly') intervalClause = "DATE_SUB(CURDATE(), INTERVAL 365 DAY)";
+
     // Fetch recent orders with items_json
     const [orders]: any = await db.execute(
-      "SELECT items_json FROM orders WHERE items_json IS NOT NULL AND items_json != 'null' ORDER BY created_at DESC LIMIT 500"
+      `SELECT items_json FROM orders WHERE items_json IS NOT NULL AND items_json != 'null' AND order_date >= ${intervalClause} ORDER BY created_at DESC LIMIT 1000`
     );
 
     const itemCounts: Record<string, { name: string; quantity: number; revenue: number }> = {};
