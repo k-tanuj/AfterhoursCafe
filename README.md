@@ -1,5 +1,9 @@
 # Afterhours Cafe
 
+<p align="center">
+  <img src="afterhours_home.png" alt="Afterhours Cafe Homepage" width="800">
+</p>
+
 Welcome to the Afterhours Cafe repository! This project is a modern, feature-rich full-stack web application built to serve both cafe customers and administrators. It provides a seamless user experience for ordering and reservations, along with powerful management and AI-driven analytics tools for the cafe staff.
 
 ## ✨ Features
